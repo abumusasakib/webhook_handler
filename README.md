@@ -35,10 +35,25 @@ You need a service to **process the webhook** and trigger the GitLab pipeline. I
    python webhook_handler.py
    ```
 
-3. Deploy the script to a server and expose it via a public URL (use **ngrok** for testing):
+3. Deploy the script to a server and expose it via a public URL
 
-   ```sh
-   ngrok http 5000
-   ```
+4. Copy the URL and set it as the webhook URL in GitLab.
 
-4. Copy the ngrok URL and set it as the webhook URL in GitLab.
+### **Instruction for using Render.com (Free Hosted Server) to host Flask server**
+
+📌 **How It Works:**
+
+- Deploy a **Flask webhook server** for **free**.
+- Your webhook runs **24/7 with a static URL**.
+
+#### **Setup Steps:**
+
+1. Push your Flask app to **GitHub**.
+2. Deploy it on:
+   - **[Render.com](https://render.com/)**
+3. Get a **free static public URL**.
+
+🔹 **Pros**: ✅ **Fully free**, **no need to keep your PC running**.
+🔹 **Cons**: ❌ Needs GitHub deployment.
+
+---
