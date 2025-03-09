@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 GITLAB_URL = os.getenv("GITLAB_URL")
 GITLAB_PRIVATE_TOKEN = os.getenv("GITLAB_PRIVATE_TOKEN")
-PROJECT_ID = os.getenv("GITLAB_PRIVATE_TOKEN")
+PROJECT_ID = os.getenv("PROJECT_ID")
 
 GITLAB_TRIGGER_TOKEN = os.getenv("GITLAB_TRIGGER_TOKEN")
 GITLAB_TRIGGER_URL = f"{GITLAB_URL}/api/v4/projects/{PROJECT_ID}/trigger/pipeline?token={GITLAB_TRIGGER_TOKEN}"
@@ -43,23 +43,21 @@ def webhook():
                 response = requests.post(
                     GITLAB_TRIGGER_URL,
                     headers={"PRIVATE-TOKEN": GITLAB_PRIVATE_TOKEN},
-                    json={"ref": source_branch},
+                    json={"token": GITLAB_TRIGGER_TOKEN, "ref": source_branch},
                     timeout=10  # Avoid long waits
                 )
                 response.raise_for_status()  # Raise an error for failed requests
 
                 # Debugging GitLab API response
                 print(f"GitLab API Response: {response.status_code}, {response.text}")
-                
-                return jsonify({"message": f"Pipeline triggered for branch {source_branch}", "response": response.json()}), 200
+                print(f"Raw Response Headers: {response.headers}")
+                print(f"Raw Response Content: {response.content}")
+
+                return jsonify(response.json()), response.status_code  # ✅ Returns GitLab's full response
+
             except requests.exceptions.RequestException as e:
                 print(f"Error triggering GitLab pipeline: {e}")
-
-
-            return jsonify({
-                "message": f"Pipeline triggered for branch {source_branch}",
-                "response": response.json()
-            }), 200
+                return jsonify({"error": "Failed to trigger pipeline", "details": str(e)}), 500
 
     return jsonify({"message": "No action taken"}), 200
 
