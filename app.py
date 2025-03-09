@@ -50,11 +50,19 @@ def webhook():
                 response.raise_for_status()  # Raise an error for failed requests
 
                 # Debugging GitLab API response
-                print(f"GitLab API Response: {response.status_code}, {response.text}")
+                print(f"GitLab API Response Code: {response.status_code}")
+                print(f"GitLab API Response: {response.text}")  # Log the response
                 print(f"Raw Response Headers: {response.headers}")
                 print(f"Raw Response Content: {response.content}")
 
-                return jsonify(response.json()), response.status_code  # ✅ Returns GitLab's full response
+                # Handle empty or malformed responses properly
+                if response.status_code in [200, 201]:
+                    try:
+                        return jsonify(response.json()), response.status_code  # ✅ Return GitLab's response
+                    except ValueError:
+                        return jsonify({"message": f"Pipeline triggered for {source_branch}, but no content returned"}), response.status_code
+
+                return jsonify({"error": "Unexpected response from GitLab", "details": response.text}), response.status_code
 
             except requests.exceptions.RequestException as e:
                 print(f"Error triggering GitLab pipeline: {e}")
