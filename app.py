@@ -9,7 +9,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Load environment variables
-GITLAB_URL = os.getenv("GITLAB_URL") # Example: "https://gitlab.celloscope.net"
+GITLAB_URL = os.getenv("GITLAB_URL") # Example: "https://gitlab.com"
 PROJECT_ID = os.getenv("GITLAB_PROJECT_ID")
 GITLAB_PRIVATE_TOKEN = os.getenv("GITLAB_PRIVATE_TOKEN")
 GITLAB_TRIGGER_TOKEN = os.getenv("GITLAB_TRIGGER_TOKEN")
