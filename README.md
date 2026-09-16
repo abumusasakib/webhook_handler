@@ -38,8 +38,9 @@ Create a **`.env` file** in the root directory and add:
 GITLAB_URL=https://gitlab.com
 GITLAB_PROJECT_ID=your_project_id
 GITLAB_PRIVATE_TOKEN=your_gitlab_private_token
-GITLAB_TRIGGER_TOKEN=your_gitlab_trigger_token
 ```
+
+`GITLAB_PRIVATE_TOKEN` needs at least **Developer** access on the project — it's used to create a merge request pipeline via GitLab's API, which requires more than a trigger token's permissions.
 
 ### **4️⃣ Run the Flask Application Locally**
 
@@ -97,7 +98,6 @@ Create a **`.env` file** in the root directory (same as above) and additionally 
 GITLAB_URL=https://gitlab.com
 GITLAB_PROJECT_ID=your_project_id
 GITLAB_PRIVATE_TOKEN=your_gitlab_private_token
-GITLAB_TRIGGER_TOKEN=your_gitlab_trigger_token
 
 WEBHOOK_PORT=8201
 ```
@@ -132,6 +132,17 @@ docker compose up -d --build   # rebuild after code changes
 
 - Pick a `WEBHOOK_PORT` that doesn't collide with other services already running on the host.
 - `docker-compose.yml` and `Dockerfile` in this repo are intentionally standalone — they build and run only this Flask app, and don't share a network or reverse proxy with any other project's containers.
+
+### Surviving Reboots (Auto-Start)
+
+`docker-compose.yml` sets `restart: unless-stopped`, so once the container is started with `docker compose up -d`, it automatically comes back up whenever the Docker daemon restarts — you don't need to re-run `docker compose up -d` yourself after that.
+
+This only kicks in once Docker itself is running, though. If Docker Desktop isn't set to launch on login, a full machine reboot leaves Docker (and this container) stopped until someone opens Docker Desktop manually. To make it fully hands-off after a reboot:
+
+1. Open **Docker Desktop → Settings → General**.
+2. Enable **"Start Docker Desktop when you log in"**.
+
+With that enabled, a reboot brings up Docker Desktop → which brings up this container → with no manual steps.
 
 ---
 

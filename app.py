@@ -12,9 +12,6 @@ app = Flask(__name__)
 GITLAB_URL = os.getenv("GITLAB_URL") # Example: "https://gitlab.com"
 PROJECT_ID = os.getenv("GITLAB_PROJECT_ID")
 GITLAB_PRIVATE_TOKEN = os.getenv("GITLAB_PRIVATE_TOKEN")
-GITLAB_TRIGGER_TOKEN = os.getenv("GITLAB_TRIGGER_TOKEN")
-
-GITLAB_TRIGGER_URL = f"{GITLAB_URL}/api/v4/projects/{PROJECT_ID}/trigger/pipeline?token={GITLAB_TRIGGER_TOKEN}"
 
 
 @app.route("/", methods=["POST"])
@@ -32,19 +29,22 @@ def webhook():
         title = data["object_attributes"]["title"]
         draft_status = data["object_attributes"]["draft"]
         source_branch = data["object_attributes"]["source_branch"]
+        mr_iid = data["object_attributes"]["iid"]
 
         # Debugging logs
-        print(f"Title: {title}, Draft Status: {draft_status}, Source Branch: {source_branch}")
+        print(f"Title: {title}, Draft Status: {draft_status}, Source Branch: {source_branch}, MR IID: {mr_iid}")
 
         # Ensure we only trigger when the draft status is removed
         if draft_status is False:  # Draft was removed
-            print(f"Draft status removed for branch {source_branch}. Triggering pipeline...")
+            print(f"Draft status removed for MR !{mr_iid} ({source_branch}). Triggering MR pipeline...")
 
             try:
+                # Creates a merge_request_event-sourced pipeline (not a "trigger"-sourced one),
+                # so CI rules keyed on $CI_MERGE_REQUEST_ID / $CI_PIPELINE_SOURCE behave the same
+                # as when GitLab creates the pipeline itself.
                 response = requests.post(
-                    GITLAB_TRIGGER_URL,
+                    f"{GITLAB_URL}/api/v4/projects/{PROJECT_ID}/merge_requests/{mr_iid}/pipelines",
                     headers={"PRIVATE-TOKEN": GITLAB_PRIVATE_TOKEN},
-                    json={"token": GITLAB_TRIGGER_TOKEN, "ref": source_branch},
                     timeout=10  # Avoid long waits
                 )
                 response.raise_for_status()  # Raise an error for failed requests
@@ -60,7 +60,7 @@ def webhook():
                     try:
                         return jsonify(response.json()), response.status_code  # ✅ Return GitLab's response
                     except ValueError:
-                        return jsonify({"message": f"Pipeline triggered for {source_branch}, but no content returned"}), response.status_code
+                        return jsonify({"message": f"Pipeline triggered for MR !{mr_iid}, but no content returned"}), response.status_code
 
                 return jsonify({"error": "Unexpected response from GitLab", "details": response.text}), response.status_code
 
