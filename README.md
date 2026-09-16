@@ -135,6 +135,85 @@ docker compose up -d --build   # rebuild after code changes
 
 ---
 
+## 🍎 Deploying via Colima (macOS)
+
+On a macOS host where Docker Desktop isn't installed — e.g. a machine that already runs other projects' containers via [Colima](https://github.com/abiosoft/colima) — use the same Colima setup for this app rather than installing Docker Desktop separately.
+
+### **1️⃣ Install Colima (if not already installed)**
+
+```sh
+brew install colima docker docker-compose
+```
+
+Skip this if Colima/Docker CLI are already set up on the host for another project.
+
+### **2️⃣ Check if Colima Is Already Running**
+
+Don't start a second VM if one is already up for another project — check first:
+
+```sh
+docker info >/dev/null 2>&1 && echo "Docker/Colima already running" || echo "Not running"
+```
+
+### **3️⃣ Start Colima (only if not already running)**
+
+```sh
+colima start --cpu 4 --memory 8
+```
+
+If the first attempt fails, clear stale/partial cache files and retry once:
+
+```sh
+rm -rf "$HOME/Library/Caches/colima/caches"/*.downloading
+rm -rf "$HOME/Library/Caches/colima/caches"/*.tmp
+colima start --cpu 4 --memory 8
+```
+
+### **4️⃣ Point Docker at the Colima Context**
+
+```sh
+docker context use colima
+```
+
+### **5️⃣ Wait Until Docker Is Ready**
+
+```sh
+for i in {1..60}; do
+    if docker info >/dev/null 2>&1; then
+        echo "Docker is ready"
+        break
+    fi
+    sleep 2
+done
+```
+
+### **6️⃣ Build and Start the Webhook Handler**
+
+```sh
+docker compose up -d --build
+```
+
+(Falls back to `docker-compose up -d --build` if the `compose` plugin isn't available.)
+
+### **7️⃣ Recovery (if `docker compose up -d` fails)**
+
+If the container fails to start even with Colima reporting healthy, recreate the VM and retry once:
+
+```sh
+colima delete -f
+colima start --cpu 4 --memory 8
+docker context use colima
+# re-run the "wait until ready" loop from step 5, then:
+docker compose up -d --build
+```
+
+### Notes
+
+- Colima is shared infrastructure on the host — don't stop or delete it without checking whether other projects' containers (e.g. the static site deployments) depend on it too.
+- This app doesn't need its own Colima VM or Docker context; it runs as just another container on the existing one, isolated by its own compose project/network as described above.
+
+---
+
 ## 🔗 Setting Up GitLab Webhook
 
 ### **1️⃣ Add a Webhook to Your GitLab Repository**
