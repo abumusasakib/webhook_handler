@@ -85,6 +85,56 @@ git push -u origin main
 
 ---
 
+## 🐳 Running with Docker
+
+The app can also be run in a container instead of directly with Python/Gunicorn — useful when co-hosting it on a machine that already runs other Dockerized services.
+
+### **1️⃣ Set Up Environment Variables**
+
+Create a **`.env` file** in the root directory (same as above) and additionally set the host port to publish the container on:
+
+```sh
+GITLAB_URL=https://gitlab.com
+GITLAB_PROJECT_ID=your_project_id
+GITLAB_PRIVATE_TOKEN=your_gitlab_private_token
+GITLAB_TRIGGER_TOKEN=your_gitlab_trigger_token
+
+WEBHOOK_PORT=8201
+```
+
+`WEBHOOK_PORT` is the port exposed on the **host**; the container always listens on `6000` internally.
+
+### **2️⃣ Build and Start the Container**
+
+```sh
+docker compose up -d --build
+```
+
+This builds the image from the `Dockerfile` and starts the app with Gunicorn, bound to `0.0.0.0:6000` inside the container and published to `${WEBHOOK_PORT}` on the host.
+
+### **3️⃣ Verify It's Running**
+
+```sh
+docker compose ps
+docker compose logs -f webhook-handler
+```
+
+The handler should now be reachable at `http://<host>:${WEBHOOK_PORT}/`.
+
+### **4️⃣ Stop / Restart**
+
+```sh
+docker compose down
+docker compose up -d --build   # rebuild after code changes
+```
+
+### Notes for shared hosts
+
+- Pick a `WEBHOOK_PORT` that doesn't collide with other services already running on the host.
+- `docker-compose.yml` and `Dockerfile` in this repo are intentionally standalone — they build and run only this Flask app, and don't share a network or reverse proxy with any other project's containers.
+
+---
+
 ## 🔗 Setting Up GitLab Webhook
 
 ### **1️⃣ Add a Webhook to Your GitLab Repository**
@@ -108,6 +158,9 @@ git push -u origin main
 ├── app.py               # Main Flask Application
 ├── wsgi.py              # WSGI entry point for Gunicorn
 ├── requirements.txt     # Dependencies
+├── Dockerfile           # Container image definition
+├── docker-compose.yml   # Container run configuration
+├── .dockerignore        # Files excluded from the image build context
 ├── .env                 # Environment Variables (not committed)
 └── README.md            # This File
 ```
